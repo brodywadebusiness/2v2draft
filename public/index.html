@@ -1,0 +1,112 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Clash Royale 2v2 Draft</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f4f1ea;--fg:#222;--card:#fff;--ac:#2a5bd7;--mu:#777;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15171c;--fg:#eee;--card:#222630;--ac:#6b96ff;--mu:#999}}
+:root[data-theme="dark"]{--bg:#15171c;--fg:#eee;--card:#222630;--ac:#6b96ff;--mu:#999}
+body{background:var(--bg);color:var(--fg);font:16px system-ui,sans-serif;margin:0;padding:14px;max-width:640px;margin:auto}
+h1{font-size:1.3rem}h2{font-size:1rem;margin:18px 0 6px}
+.box{background:var(--card);border-radius:10px;padding:10px;margin:8px 0}
+button{font:inherit;border:0;border-radius:8px;padding:10px 14px;margin:3px;background:var(--ac);color:#fff}
+button.o{background:none;border:1px solid var(--ac);color:var(--ac)}button:disabled{opacity:.4}
+.mu{color:var(--mu);font-size:.85rem}.pk{display:flex;gap:6px;flex-wrap:wrap}.pk button{flex:1}
+.deck span{display:inline-block;background:var(--bg);border-radius:6px;padding:3px 8px;margin:2px}
+.cd{display:inline-flex;flex-direction:column;align-items:center;text-align:center;font-size:.72rem;width:76px;margin:2px}
+.cd img{width:70px;height:auto;display:block}.pk button.cd{width:auto;flex:1;background:var(--bg);color:var(--fg);border:1px solid var(--ac)}
+.deck span.cd{background:none;padding:0}
+</style></head><body>
+<h1>Clash Royale 2v2 Draft</h1><div id="app"><div class="box mu">Connecting…</div></div>
+<script>
+const S=s=>s.split(/\s+/);
+const REQ={tankUnit:S("goblinMachine rascals electroGiant royalGiant valkyrie giant iceGolem megaKnight runeGiant giantSkeleton bowler goblinGiant elixirGolem royalRecruits knight miner goblinDrill lavaHound golem"),
+antiAir:S("flyingMachine firecracker executioner archers minionHorde megaMinion nightWitch musketeer phoenix electroDragon skeletonDragons babyDragon witch wizard bats zappies magicArcher princess hunter minions spearGoblins dartGoblin infernoDragon iceWizard electroWizard motherWitch"),
+distractions:S("berserker skeletons goblinGang skeletonArmy iceGolem guards fireSpirit goblins electroSpirit iceSpirit bomber minions spearGoblins healSpirit"),
+directDamage:S("zap lightning arrows poison log rage fireball giantSnowball barbarianBarrel void goblinCurse royalDelivery earthquake rocket"),
+winCons:S("ramRider suspiciousBush threeMusketeers wallBreakers royalGiant battleRam giant runeGiant goblinGiant elixirGolem miner royalHogs skeletonBarrel balloon goblinDrill goblinBarrel graveyard hogRider")};
+const OPT={investment:S("mortar goblinHut goblinCage furnace tombstone barbarianHut elixirCollector xBow"),
+punish:S("rascals mortar bandit minionHorde prince cannonCart lumberjack darkPrince royalGhost eliteBarbarians goblinDrill goblinBarrel xBow"),
+hitTower:S("flyingMachine suspiciousBush bandit goblinGang prince cannonCart fireSpirit darkPrince magicArcher princess spearGoblins dartGoblin royalGhost"),
+versatileLegs:S("bandit nightWitch lumberjack magicArcher princess royalGhost fisherman infernoDragon iceWizard electroWizard motherWitch"),
+tankSupport:S("flyingMachine executioner minionHorde megaMinion nightWitch musketeer phoenix prince electroDragon cannonCart skeletonDragons babyDragon darkPrince witch bowler wizard zappies battleHealer hunter goblinDemolisher"),
+antiTank:S("rascals goblinCage cannonCart lumberjack witch hunter cannon infernoDragon eliteBarbarians miniPekka infernoTower sparky barbarians pekka bombTower tesla"),
+secondSpell:S("zap lightning arrows poison log fireball giantSnowball barbarianBarrel goblinCurse earthquake freeze rocket tornado"),
+splash:S("firecracker executioner valkyrie skeletonDragons megaKnight babyDragon fireSpirit darkPrince witch bowler wizard magicArcher bomber hunter royalGhost iceWizard goblinDemolisher"),
+miniTank:S("goblinMachine rascals berserker bandit prince goblinCage valkyrie cannonCart darkPrince battleHealer knight miner royalGhost fisherman miniPekka"),
+basicThrees:S("firecracker archers bandit goblinGang megaMinion skeletonArmy guards bomber royalDelivery knight minions dartGoblin royalGhost fisherman goblinBarrel"),
+cycle:S("skeletons iceGolem fireSpirit goblins electroSpirit iceSpirit bats spearGoblins healSpirit"),
+cheapAntiAir:S("flyingMachine firecracker archers megaMinion musketeer phoenix babyDragon bats zappies magicArcher princess minions spearGoblins dartGoblin iceWizard")};
+const POOL={...REQ,...OPT};
+const nice=s=>s.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
+const shuf=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function gen(){for(let t=0;t<200;t++){
+ const classes=[...Object.keys(REQ),...shuf(Object.keys(OPT)).slice(0,3)];
+ const used=new Set(),offers={};let ok=true;
+ outer:for(let d=0;d<2;d++)for(let c=0;c<8;c++){
+  const cs=shuf(POOL[classes[c]]).filter(x=>!used.has(x)).slice(0,2);
+  if(cs.length<2){ok=false;break outer}
+  cs.forEach(x=>used.add(x));offers[d+"_"+c]=cs}
+ if(ok)return{classes,offers}}}
+
+// Seats 0&1 = Team A, 2&3 = Team B. Duels: seat0 vs seat2, seat1 vs seat3.
+// In each duel the 8 classes are split 4/4; the card you pass goes to your duel opponent.
+const tag=["P1 (Team A)","P2 (Team A)","P3 (Team B)","P4 (Team B)"];
+let db=null,uid=null,setup=null,seats=[null,null,null,null],picks=[{},{},{},{}],ready=false;
+const $=id=>document.getElementById(id);
+const my=()=>meIdx;
+function deck(s){const d=s%2,o=(s+2)%4,out=[];
+ for(const c in picks[s])out.push(picks[s][c]);
+ for(const c in picks[o])out.push(setup.offers[d+"_"+c].find(x=>x!==picks[o][c]));
+ return out}
+const IMG_BASE="https://www.noff.gg/clash-royale/res/img/cards/";
+const EXTRA={log:["the-log","thelog"]};
+function urls(x){const k=x.replace(/([A-Z])/g,m=>"-"+m.toLowerCase());
+ const names=[...new Set([k,x.toLowerCase(),k.replace(/-/g,"_"),x,...(EXTRA[x]||[])])];
+ return names.map(n=>IMG_BASE+n+".webp")}
+function imgFail(el){const l=el.dataset.c.split("|"),i=+el.dataset.i+1;if(i<l.length){el.dataset.i=i;el.src=l[i]}else el.style.display="none"}
+const card=x=>{const u=urls(x);
+ return `<img src="${u[0]}" data-c="${u.join("|")}" data-i="0" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="imgFail(this)"><span>${nice(x)}</span>`};
+const chips=a=>a.map(x=>`<span class="cd">${card(x)}</span>`).join("")||'<span class="mu">none yet</span>';
+const ownOf=(s,ow)=>ow[s];
+function mkSetup(){const g=gen();if(!g)return null;g.own=[];
+ for(let d=0;d<2;d++){const ix=shuf([0,1,2,3,4,5,6,7]);g.own[d]=ix.slice(0,4).sort((a,b)=>a-b);g.own[d+2]=ix.slice(4).sort((a,b)=>a-b)}
+ return g}
+const room=(location.hash||"").slice(1).toUpperCase()||(()=>{const c=Math.random().toString(36).slice(2,6).toUpperCase();location.hash=c;return c})();
+const tk=localStorage.tk||(localStorage.tk=Math.random().toString(36).slice(2)+Date.now());
+let ver=-1,meIdx=-1;
+function apply(d){if(!d||d.error){if(d&&d.error)alert(d.error);return}
+ if(d.v===ver)return;ver=d.v;setup=d.setup;seats=d.seats;picks=d.picks;meIdx=d.me;render()}
+async function api(p,body){try{apply(await (await fetch("/api/"+room+"/"+p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,t:tk})})).json())}catch(e){alert("Network error")}}
+async function newDraft(){
+ if(setup&&!confirm("Start a new draft? This clears everyone's seats and picks."))return;
+ const g=mkSetup();if(!g)return alert("Couldn't build a draft, try again");
+ ver=-1;api("new",{setup:g})}
+const claim=s=>api("seat",{s});
+const leave=()=>api("leave",{});
+const pick=(c,x)=>api("pick",{c,x});
+async function poll(){try{apply(await (await fetch(`/api/${room}/state?t=${tk}`)).json())}catch(e){}setTimeout(poll,1500)}
+function render(){
+ if(!ready)return;
+ const app=$("app");
+ if(!db){app.innerHTML='<div class="box">This page needs you to be signed in to Claude (and invited to the artifact) so the four players share one draft.</div>';return}
+ let h=`<div class="box mu">Room <b>${room}</b> — share this page's link with your friends</div><div class="box"><button onclick="newDraft()">${setup?"New draft (reset)":"Start draft"}</button>`;
+ if(my()>=0)h+=`<button class="o" onclick="leave()">Leave my seat</button>`;
+ h+=`</div>`;
+ if(!setup){app.innerHTML=h+'<div class="box mu">No draft yet. Anyone can press Start draft, then everyone picks a seat.</div>';return}
+ const me=my();
+ h+=`<div class="box">Classes: ${setup.classes.map(nice).join(", ")}</div><h2>Seats</h2><div class="pk">`;
+ for(let s=0;s<4;s++){const t=seats[s];
+  h+=`<button class="${s===me?"":"o"}" ${t&&s!==me||me>=0&&s!==me?"disabled":""} onclick="claim(${s})">${tag[s]}<br><small>${s===me?"You":t?"Taken":"Open"} · ${Object.keys(picks[s]).length}/4</small></button>`}
+ h+=`</div>`;
+ const done=[0,1,2,3].every(s=>Object.keys(picks[s]).length===4);
+ if(me<0)h+='<div class="box mu">Pick an open seat to start drafting. Your duel opponent is the seat across from you (P1 vs P3, P2 vs P4).</div>';
+ else{h+=`<h2>${tag[me]} — your picks</h2><div class="mu">The card you pass goes to ${tag[(me+2)%4]}. Teammate: ${tag[me^1]}.</div>`;
+  for(const c of setup.own[me]){const off=setup.offers[(me%2)+"_"+c],k=picks[me][c];
+   h+=`<div class="box"><b>${nice(setup.classes[c])}</b><div class="pk">`+
+    (k?`<span class="cd">✅ ${card(k)}</span>`:off.map(x=>`<button class="cd" onclick="pick(${c},'${x}')">${card(x)}</button>`).join(""))+`</div></div>`}}
+ h+=`<h2>Decks</h2>`;
+ for(let s=0;s<4;s++){if(!(done||s===me||me>=0&&s===(me^1))){continue}
+  const dk=deck(s);h+=`<div class="box deck"><b>${tag[s]}</b> <span class="mu">${dk.length}/8</span><br>${chips(dk)}</div>`}
+ if(!done)h+='<div class="box mu">Opponent decks are revealed when all four players finish.</div>';
+ app.innerHTML=h}
+ready=true;db=true;render();poll();
+</script></body></html>
