@@ -1,12 +1,18 @@
 const http=require("http"),fs=require("fs"),path=require("path");
 const rooms=new Map();
 const get=c=>{let r=rooms.get(c);if(!r){r={v:0,setup:null,seats:[null,null,null,null],picks:[{},{},{},{}],t:Date.now()};rooms.set(c,r)}r.t=Date.now();return r};
-const view=(r,t)=>{const me=r.seats.indexOf(t),n=r.picks.map(p=>Object.keys(p).length),done=n.every(x=>x===4);
- let setup=null;if(r.setup){const o={};
-  if(done)Object.assign(o,r.setup.offers);
-  else if(me>=0){const c=r.setup.own[me].find(c=>!(c in r.picks[me]));if(c!==undefined){const k=(me%2)+"_"+c;o[k]=r.setup.offers[k]}}
-  setup={own:r.setup.own,offers:o}}
- return{v:r.v,setup,seats:r.seats.map(x=>!!x),me,counts:n,picks:r.picks.map((p,i)=>done||i===me||(me>=0&&i===(me^1))?p:{})}};
+const mkDecks=(r,s)=>{const o=(s+2)%4,d=s%2,out=Object.values(r.picks[s]);
+ for(const c in r.picks[o])out.push(r.setup.offers[d+"_"+c].find(x=>x!==r.picks[o][c]));return out};
+const passedBy=(r,s)=>Object.keys(r.picks[s]).map(c=>r.setup.offers[(s%2)+"_"+c].find(x=>x!==r.picks[s][c]));
+// Players only ever receive: their own offers/picks, their teammate's picks, and (once everyone is done)
+// their own deck, their teammate's deck, and the cards they and their teammate passed on. Never opponents' picks/decks.
+const view=(r,t)=>{const me=r.seats.indexOf(t),n=r.picks.map(p=>Object.keys(p).length),done=n.every(x=>x===4),mate=me^1;
+ let setup=null,decks=null,passed=null;
+ if(r.setup){const o={};
+  if(!done&&me>=0){const c=r.setup.own[me].find(c=>!(c in r.picks[me]));if(c!==undefined){const k=(me%2)+"_"+c;o[k]=r.setup.offers[k]}}
+  setup={own:r.setup.own,offers:o};
+  if(done&&me>=0){decks={[me]:mkDecks(r,me),[mate]:mkDecks(r,mate)};passed={[me]:passedBy(r,me),[mate]:passedBy(r,mate)}}}
+ return{v:r.v,setup,seats:r.seats.map(x=>!!x),me,counts:n,decks,passed,picks:r.picks.map((p,i)=>me>=0&&(i===me||i===mate)?p:{})}};
 setInterval(()=>{for(const[k,r]of rooms)if(Date.now()-r.t>864e5)rooms.delete(k)},36e5);
 function act(r,p,b){const t=String(b.t||"");if(!t)return"Bad request";
  const me=r.seats.indexOf(t);
