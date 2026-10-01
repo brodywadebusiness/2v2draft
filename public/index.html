@@ -53,8 +53,11 @@ const tag=["P1 (Team A)","P2 (Team A)","P3 (Team B)","P4 (Team B)"];
 let db=null,uid=null,setup=null,seats=[null,null,null,null],picks=[{},{},{},{}],ready=false;
 const $=id=>document.getElementById(id);
 const my=()=>meIdx;
+let counts=[0,0,0,0];
+const isDone=()=>counts.every(n=>n===4);
 function deck(s){const d=s%2,o=(s+2)%4,out=[];
  for(const c in picks[s])out.push(picks[s][c]);
+ if(!isDone())return out;
  for(const c in picks[o])out.push(setup.offers[d+"_"+c].find(x=>x!==picks[o][c]));
  return out}
 const IMG_BASE="https://www.noff.gg/clash-royale/res/img/cards/";
@@ -74,7 +77,7 @@ const room=(location.hash||"").slice(1).toUpperCase()||(()=>{const c=Math.random
 const tk=localStorage.tk||(localStorage.tk=Math.random().toString(36).slice(2)+Date.now());
 let ver=-1,meIdx=-1;
 function apply(d){if(!d||d.error){if(d&&d.error)alert(d.error);return}
- if(d.v===ver)return;ver=d.v;setup=d.setup;seats=d.seats;picks=d.picks;meIdx=d.me;render()}
+ if(d.v===ver)return;ver=d.v;setup=d.setup;seats=d.seats;picks=d.picks;counts=d.counts;meIdx=d.me;render()}
 async function api(p,body){try{apply(await (await fetch("/api/"+room+"/"+p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,t:tk})})).json())}catch(e){alert("Network error")}}
 async function newDraft(){
  if(setup&&!confirm("Start a new draft? This clears everyone's seats and picks."))return;
@@ -93,20 +96,21 @@ function render(){
  h+=`</div>`;
  if(!setup){app.innerHTML=h+'<div class="box mu">No draft yet. Anyone can press Start draft, then everyone picks a seat.</div>';return}
  const me=my();
- h+=`<div class="box">Classes: ${setup.classes.map(nice).join(", ")}</div><h2>Seats</h2><div class="pk">`;
+ h+=`<h2>Seats</h2><div class="pk">`;
  for(let s=0;s<4;s++){const t=seats[s];
-  h+=`<button class="${s===me?"":"o"}" ${t&&s!==me||me>=0&&s!==me?"disabled":""} onclick="claim(${s})">${tag[s]}<br><small>${s===me?"You":t?"Taken":"Open"} · ${Object.keys(picks[s]).length}/4</small></button>`}
+  h+=`<button class="${s===me?"":"o"}" ${t&&s!==me||me>=0&&s!==me?"disabled":""} onclick="claim(${s})">${tag[s]}<br><small>${s===me?"You":t?"Taken":"Open"} · ${counts[s]}/4</small></button>`}
  h+=`</div>`;
- const done=[0,1,2,3].every(s=>Object.keys(picks[s]).length===4);
+ const done=isDone();
  if(me<0)h+='<div class="box mu">Pick an open seat to start drafting. Your duel opponent is the seat across from you (P1 vs P3, P2 vs P4).</div>';
- else{h+=`<h2>${tag[me]} — your picks</h2><div class="mu">The card you pass goes to ${tag[(me+2)%4]}. Teammate: ${tag[me^1]}.</div>`;
-  for(const c of setup.own[me]){const off=setup.offers[(me%2)+"_"+c],k=picks[me][c];
-   h+=`<div class="box"><b>${nice(setup.classes[c])}</b><div class="pk">`+
-    (k?`<span class="cd">✅ ${card(k)}</span>`:off.map(x=>`<button class="cd" onclick="pick(${c},'${x}')">${card(x)}</button>`).join(""))+`</div></div>`}}
+ else{h+=`<h2>${tag[me]}</h2><div class="mu">The card you pass goes to ${tag[(me+2)%4]}. Teammate: ${tag[me^1]}.</div>`;
+  const c=setup.own[me].find(c=>!(c in picks[me])),n=counts[me];
+  if(c===undefined)h+=`<div class="box mu">${done?"Draft complete!":"You're done. Waiting for the other players…"}</div>`;
+  else{const off=setup.offers[(me%2)+"_"+c]||[];
+   h+=`<div class="box"><b>Pick ${n+1} of 4</b><div class="pk">`+off.map(x=>`<button class="cd" onclick="pick(${c},'${x}')">${card(x)}</button>`).join("")+`</div></div>`}}
  h+=`<h2>Decks</h2>`;
  for(let s=0;s<4;s++){if(!(done||s===me||me>=0&&s===(me^1))){continue}
-  const dk=deck(s);h+=`<div class="box deck"><b>${tag[s]}</b> <span class="mu">${dk.length}/8</span><br>${chips(dk)}</div>`}
- if(!done)h+='<div class="box mu">Opponent decks are revealed when all four players finish.</div>';
+  const dk=deck(s);h+=`<div class="box deck"><b>${tag[s]}</b> <span class="mu">${dk.length}/${done?8:4}</span><br>${chips(dk)}</div>`}
+ if(!done)h+='<div class="box mu">Passed cards and opponent decks are revealed when all four players finish.</div>';
  app.innerHTML=h}
 ready=true;db=true;render();poll();
 </script></body></html>
