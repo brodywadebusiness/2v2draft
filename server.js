@@ -1,7 +1,12 @@
 const http=require("http"),fs=require("fs"),path=require("path");
 const rooms=new Map();
 const get=c=>{let r=rooms.get(c);if(!r){r={v:0,setup:null,seats:[null,null,null,null],picks:[{},{},{},{}],t:Date.now()};rooms.set(c,r)}r.t=Date.now();return r};
-const view=(r,t)=>({v:r.v,setup:r.setup,seats:r.seats.map(x=>!!x),me:r.seats.indexOf(t),picks:r.picks});
+const view=(r,t)=>{const me=r.seats.indexOf(t),n=r.picks.map(p=>Object.keys(p).length),done=n.every(x=>x===4);
+ let setup=null;if(r.setup){const o={};
+  if(done)Object.assign(o,r.setup.offers);
+  else if(me>=0){const c=r.setup.own[me].find(c=>!(c in r.picks[me]));if(c!==undefined){const k=(me%2)+"_"+c;o[k]=r.setup.offers[k]}}
+  setup={own:r.setup.own,offers:o}}
+ return{v:r.v,setup,seats:r.seats.map(x=>!!x),me,counts:n,picks:r.picks.map((p,i)=>done||i===me||(me>=0&&i===(me^1))?p:{})}};
 setInterval(()=>{for(const[k,r]of rooms)if(Date.now()-r.t>864e5)rooms.delete(k)},36e5);
 function act(r,p,b){const t=String(b.t||"");if(!t)return"Bad request";
  const me=r.seats.indexOf(t);
